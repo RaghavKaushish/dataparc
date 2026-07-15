@@ -2,12 +2,12 @@ import streamlit as st
 import joblib
 import pandas as pd
 
-# Load assets from the model_data folder (matches your train.py)
-model = joblib.load('model_data/model.pkl')
-scaler = joblib.load('model_data/scaler.pkl')
-features = joblib.load('model_data/features.pkl')
-tag_to_name = joblib.load('model_data/tag_to_name.pkl')
-target_names = joblib.load('model_data/target_names.pkl')
+# Load assets directly from the root (no folder prefix)
+model = joblib.load('model.pkl')
+scaler = joblib.load('scaler.pkl')
+features = joblib.load('features.pkl')
+tag_to_name = joblib.load('tag_to_name.pkl')
+target_names = joblib.load('target_names.pkl')
 
 st.title("Dataparc Sensor Data Predictor")
 
