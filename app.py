@@ -1,33 +1,35 @@
 import streamlit as st
-import joblib
 import pandas as pd
+import joblib
+import os
 
-# Load assets directly from the root (no folder prefix)
-model = joblib.load('model.pkl')
-scaler = joblib.load('scaler.pkl')
-features = joblib.load('features.pkl')
-tag_to_name = joblib.load('tag_to_name.pkl')
-target_names = joblib.load('target_names.pkl')
+# Helper to load files regardless of whether they are in the root or a folder
+def safe_load(filename):
+    if os.path.exists(os.path.join('model_data', filename)):
+        return joblib.load(os.path.join('model_data', filename))
+    return joblib.load(filename)
 
-st.title("Dataparc Sensor Data Predictor")
+# Load assets using the safe loader
+model = safe_load('model.pkl')
+scaler = safe_load('scaler.pkl')
+features = safe_load('features.pkl')
+target_names = safe_load('target_names.pkl')
+tag_to_name = safe_load('tag_to_name.pkl')
 
-uploaded_file = st.file_uploader("Upload your Sensor Data (Excel)", type=["xlsx"])
+st.title("Boiler Impact Analysis")
 
-if uploaded_file is not None:
-    df = pd.read_excel(uploaded_file)
+user_data = {}
+# Show readable names in the UI
+with st.expander("Adjust Input Process Parameters"):
+    for tag in features:
+        name = tag_to_name.get(tag, tag)
+        user_data[tag] = st.slider(f"{name}", 0.0, 500.0, 100.0)
+
+if st.button("Calculate System-Wide Impact"):
+    input_df = pd.DataFrame([user_data])[features]
+    predictions = model.predict(scaler.transform(input_df))[0]
     
-    # Process the input data to match the training format
-    # Ensure columns in uploaded file match 'features'
-    try:
-        X_input = df[features] 
-        X_scaled = scaler.transform(X_input)
-        
-        predictions = model.predict(X_scaled)
-        
-        # Create a result dataframe using target_names
-        results = pd.DataFrame(predictions, columns=target_names)
-        
-        st.write("Prediction Results:")
-        st.write(results)
-    except Exception as e:
-        st.error(f"Error processing data: {e}")
+    st.subheader("Predicted Output Impacts")
+    cols = st.columns(len(target_names))
+    for i, name in enumerate(target_names):
+        cols[i].metric(label=name, value=f"{predictions[i]:.2f}")
