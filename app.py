@@ -2,42 +2,32 @@ import streamlit as st
 import joblib
 import pandas as pd
 
-# 1. Load the model and assets from the root directory
-# These names match the files seen in your GitHub repository
-model = joblib.load('model.pkl')
-scaler = joblib.load('scaler.pkl')
-features = joblib.load('features.pkl')
-tag_to_name = joblib.load('tag_to_name.pkl')
-target_names = joblib.load('target_names.pkl')
+# Load assets from the model_data folder (matches your train.py)
+model = joblib.load('model_data/model.pkl')
+scaler = joblib.load('model_data/scaler.pkl')
+features = joblib.load('model_data/features.pkl')
+tag_to_name = joblib.load('model_data/tag_to_name.pkl')
+target_names = joblib.load('model_data/target_names.pkl')
 
-# 2. App Interface
-st.title("AI-Powered Social Media Growth Assistant")
+st.title("Dataparc Sensor Data Predictor")
 
-st.subheader("Input Your Content Metrics")
+uploaded_file = st.file_uploader("Upload your Sensor Data (Excel)", type=["xlsx"])
 
-# 3. Add your sliders and inputs
-# Replace these examples with your specific input features
-followers = st.slider("Current Followers", 0, 100000, 1000)
-engagement = st.number_input("Engagement Rate (%)", 0.0, 100.0, 5.0)
-
-# 4. Prediction Logic
-if st.button("Predict Growth"):
+if uploaded_file is not None:
+    df = pd.read_excel(uploaded_file)
+    
+    # Process the input data to match the training format
+    # Ensure columns in uploaded file match 'features'
     try:
-        # Prepare the input data
-        # Ensure the column order matches what your model expects
-        input_data = pd.DataFrame([[followers, engagement]], columns=features)
+        X_input = df[features] 
+        X_scaled = scaler.transform(X_input)
         
-        # Scale the input
-        input_scaled = scaler.transform(input_data)
+        predictions = model.predict(X_scaled)
         
-        # Get prediction
-        prediction = model.predict(input_scaled)
+        # Create a result dataframe using target_names
+        results = pd.DataFrame(predictions, columns=target_names)
         
-        # Display result
-        st.success(f"Predicted Growth Outcome: {prediction[0]}")
-        
+        st.write("Prediction Results:")
+        st.write(results)
     except Exception as e:
-        st.error(f"An error occurred during prediction: {e}")
-
-# 5. Debugging / Info
-st.sidebar.info("Model and assets loaded successfully from root directory.")
+        st.error(f"Error processing data: {e}")
